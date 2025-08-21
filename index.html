@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DigiDocs — Генерация статьи</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #111827;
+      --muted: #6b7280;
+      --accent: #0b57d0;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 20px;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji";
+      background: var(--bg); color: var(--fg);
+    }
+    h2 { margin: 0 0 12px; font-size: 20px; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: #fff; color: var(--fg);
+    }
+    textarea { resize: vertical; min-height: 120px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .actions { margin-top: 16px; display: flex; gap: 10px; }
+    button {
+      appearance: none; border: 0; padding: 12px 14px; border-radius: 10px; font-weight: 700; cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-ghost { background: #f3f4f6; color: var(--fg); }
+    #status { margin-top: 12px; color: var(--muted); font-size: 14px; display: none; }
+  </style>
+</head>
+<body>
+  <h2>Генерация статьи</h2>
+
+  <label for="title">Название документа</label>
+  <input id="title" type="text" placeholder="Например: Как сварить кофе дома">
+
+  <label for="prompt">Техническое задание</label>
+  <textarea id="prompt" placeholder="Опишите тему и требования к структуре..."></textarea>
+
+  <div class="row">
+    <div>
+      <label for="format">Формат</label>
+      <select id="format">
+        <option value="статья">Статья</option>
+        <option value="лонгрид">Лонгрид</option>
+        <option value="карточка">Карточка товара</option>
+        <option value="новость">Новость</option>
+        <option value="страница интернет-магазина">Страница интернет‑магазина</option>
+      </select>
+    </div>
+    <div>
+      <label for="tone">Тональность</label>
+      <select id="tone">
+        <option value="информативный">Информативный</option>
+        <option value="дружелюбный">Дружелюбный</option>
+        <option value="официальный">Официальный</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="model">Модель OpenRouter</label>
+      <select id="model">
+        <option value="gpt-4o">GPT-4o</option>
+        <option value="gpt-4">GPT-4</option>
+        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+        <option value="claude-3-haiku">Claude 3 Haiku</option>
+        <option value="mistral-7b">Mistral 7B</option>
+      </select>
+    </div>
+    <div>
+      <label for="length">Длина (знаков, минимум 300)</label>
+      <input id="length" type="number" value="1500" min="300" max="20000" step="100">
+    </div>
+  </div>
+
+  <label><input id="subheadings" type="checkbox" checked> Использовать подзаголовки (## ...)</label>
+
+  <div class="actions">
+    <button class="btn-primary" id="gen" onclick="generate()">Сгенерировать</button>
+    <button class="btn-ghost" onclick="openSettings()">Настройки</button>
+  </div>
+
+  <div id="status">Выполняется...</div>
+
+  <script>
+    function openSettings() {
+      google.script.run.showSettingsDialog();
+    }
+
+    function generate() {
+      const prompt = document.getElementById('prompt').value.trim();
+      if (!prompt) { alert('Введите техническое задание.'); return; }
+
+      const data = {
+        title: document.getElementById('title').value.trim() || 'Сгенерированная статья',
+        prompt,
+        format: document.getElementById('format').value,
+        tone: document.getElementById('tone').value,
+        model: document.getElementById('model').value,
+        length: parseInt(document.getElementById('length').value, 10),
+        useSubheadings: document.getElementById('subheadings').checked
+      };
+
+      const btn = document.getElementById('gen');
+      const st = document.getElementById('status');
+      btn.disabled = true; st.style.display = 'block'; st.textContent = 'Генерация...';
+
+      google.script.run
+        .withSuccessHandler(url => {
+          st.innerHTML = 'Готово: <a href=\"' + url + '\" target=\"_blank\">Открыть документ</a>';
+          btn.disabled = false;
+        })
+        .withFailureHandler(err => {
+          st.textContent = 'Ошибка: ' + (err && err.message ? err.message : err);
+          btn.disabled = false;
+        })
+        .generateArticleWithOptions(data);
+    }
+  </script>
+</body>
+</html>

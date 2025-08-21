@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DigiDocs — Настройки</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; padding: 20px; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    h2 { margin: 0 0 10px; font-size: 20px; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .actions { margin-top: 16px; display: flex; gap: 10px; }
+    button { appearance: none; border: 0; padding: 12px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+    .btn-primary { background: #0b57d0; color: #fff; }
+    .muted { color: #6b7280; font-size: 13px; }
+    #status { margin-top: 10px; color: #6b7280; font-size: 14px; display: none; }
+    code { background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h2>Настройки DigiDocs</h2>
+  <p class="muted">Ключи хранятся в <code>Script Properties</code>. Их можно удалить в редакторе скриптов при необходимости.</p>
+
+  <label>OpenRouter API Key</label>
+  <input id="OPENROUTER_KEY" type="text" placeholder="sk-or-..." />
+
+  <label>Text.ru API Key</label>
+  <input id="TEXT_RU_KEY" type="text" placeholder="ваш ключ text.ru" />
+
+  <div class="row">
+    <div>
+      <label>Базовый URL OpenRouter</label>
+      <input id="OPENROUTER_BASE" type="text" placeholder="https://openrouter.ai/api/v1/chat/completions" />
+    </div>
+    <div>
+      <label>Модель по умолчанию</label>
+      <input id="OPENROUTER_MODEL" type="text" placeholder="gpt-4o" />
+    </div>
+  </div>
+
+  <label>ID шаблона Google Docs (опционально)</label>
+  <input id="TEMPLATE_ID" type="text" placeholder="1AbC... (ID документа-шаблона)" />
+
+  <div class="actions">
+    <button class="btn-primary" onclick="save()">Сохранить</button>
+  </div>
+
+  <div id="status">Сохранено</div>
+
+  <script>
+    function save() {
+      const data = {
+        OPENROUTER_KEY: document.getElementById('OPENROUTER_KEY').value.trim(),
+        TEXT_RU_KEY: document.getElementById('TEXT_RU_KEY').value.trim(),
+        OPENROUTER_BASE: document.getElementById('OPENROUTER_BASE').value.trim(),
+        OPENROUTER_MODEL: document.getElementById('OPENROUTER_MODEL').value.trim(),
+        TEMPLATE_ID: document.getElementById('TEMPLATE_ID').value.trim()
+      };
+      const st = document.getElementById('status');
+      st.style.display = 'block'; st.textContent = 'Сохранение...';
+      google.script.run
+        .withSuccessHandler(settings => {
+          st.textContent = 'Сохранено';
+          // Маскированные значения
+          if (settings) {
+            document.getElementById('OPENROUTER_KEY').value = '';
+            document.getElementById('TEXT_RU_KEY').value = '';
+            document.getElementById('OPENROUTER_BASE').value = settings.OPENROUTER_BASE || '';
+            document.getElementById('OPENROUTER_MODEL').value = settings.OPENROUTER_MODEL || 'gpt-4o';
+            document.getElementById('TEMPLATE_ID').value = settings.TEMPLATE_ID || '';
+          }
+        })
+        .withFailureHandler(err => {
+          st.textContent = 'Ошибка: ' + (err && err.message ? err.message : err);
+        })
+        .saveSettings(data);
+    }
+
+    function init() {
+      google.script.run
+        .withSuccessHandler(settings => {
+          if (!settings) return;
+          document.getElementById('OPENROUTER_BASE').value = settings.OPENROUTER_BASE || '';
+          document.getElementById('OPENROUTER_MODEL').value = settings.OPENROUTER_MODEL || 'gpt-4o';
+          document.getElementById('TEMPLATE_ID').value = settings.TEMPLATE_ID || '';
+          // Ключи показываем маской в placeholder
+          if (settings.OPENROUTER_KEY_MASKED) {
+            document.getElementById('OPENROUTER_KEY').placeholder = settings.OPENROUTER_KEY_MASKED;
+          }
+          if (settings.TEXT_RU_KEY_MASKED) {
+            document.getElementById('TEXT_RU_KEY').placeholder = settings.TEXT_RU_KEY_MASKED;
+          }
+        })
+        .getSettings();
+    }
+    init();
+  </script>
+</body>
+</html>
